@@ -11,6 +11,25 @@ from launch.conditions import IfCondition, UnlessCondition
 import os
 from ament_index_python.packages import get_package_share_directory
 import yaml
+import os
+import xacro
+import tempfile
+
+def to_urdf(xacro_path, parameters=None):
+    """Convert the given xacro file to URDF file.
+    * xacro_path -- the path to the xacro file
+    * parameters -- to be used when xacro file is parsed.
+    """
+    with tempfile.NamedTemporaryFile(prefix="%s_" % os.path.basename(xacro_path), delete=False) as xacro_file:
+        urdf_path = xacro_file.name
+
+    # open and process file
+    doc = xacro.process_file(xacro_path, mappings=parameters)
+    # open the output file
+    with open(urdf_path, 'w') as urdf_file:
+        urdf_file.write(doc.toprettyxml(indent='  '))
+
+    return urdf_path
 
 
 def generate_launch_description():
@@ -128,8 +147,12 @@ def generate_launch_description():
     camera_feed_node = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(cam_feed_launch_file),
         launch_arguments={
-            "pointcloud.enable": "true",
+            "pointcloud.enable": "false",
+            "enable_rgbd": "false",
+            "enable_sync": "false",
+            "align_depth.enable": "false",
             "enable_color": "true",
+            "enable_depth": "false",
         }.items(),
         condition=UnlessCondition(LaunchConfiguration('use_depth_input'))
     )
@@ -144,6 +167,17 @@ def generate_launch_description():
         package='rviz2',
         executable='rviz2',
         arguments=['-d', rviz_file]
+    )
+
+    xacro_path = os.path.join(get_package_share_directory('realsense2_description'), 'urdf', 'test_d435i_camera.urdf.xacro')
+    urdf = to_urdf(xacro_path, {'use_nominal_extrinsics': 'true', 'add_plug': 'true'})
+    description_node = Node(
+        name='model_node',
+        package='robot_state_publisher',
+        executable='robot_state_publisher',
+        namespace='',
+        output='screen',
+        arguments=[urdf]
     )
 
     return LaunchDescription([
@@ -163,5 +197,6 @@ def generate_launch_description():
         aruco_node, 
         camera_feed_depth_node,
         camera_feed_node,
+        description_node,
         rviz2_node
     ])
