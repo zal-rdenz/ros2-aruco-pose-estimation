@@ -140,6 +140,7 @@ def generate_launch_description():
             "align_depth.enable": "true",
             "enable_color": "true",
             "enable_depth": "true",
+            "rgb_camera.color_profile": "1920x1080x30",
         }.items(),
         condition=IfCondition(LaunchConfiguration('use_depth_input'))
     )
@@ -153,6 +154,7 @@ def generate_launch_description():
             "align_depth.enable": "false",
             "enable_color": "true",
             "enable_depth": "false",
+            "rgb_camera.color_profile": "1920x1080x30",
         }.items(),
         condition=UnlessCondition(LaunchConfiguration('use_depth_input'))
     )
