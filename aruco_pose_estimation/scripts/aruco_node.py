@@ -54,6 +54,8 @@ from aruco_pose_estimation.pose_estimation import pose_estimation
 from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseArray
+from tf2_ros import TransformBroadcaster
+from geometry_msgs.msg import TransformStamped
 from aruco_interfaces.msg import ArucoMarkers
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType
 
@@ -112,6 +114,10 @@ class ArucoNode(rclpy.node.Node):
         self.poses_pub = self.create_publisher(PoseArray, self.markers_visualization_topic, 10)
         self.markers_pub = self.create_publisher(ArucoMarkers, self.detected_markers_topic, 10)
         self.image_pub = self.create_publisher(Image, self.output_image_topic, 10)
+
+        # Initialize the transform broadcaster
+        self.tf_broadcaster = TransformBroadcaster(self)
+
 
         # Set up fields for camera parameters
         self.info_msg = None
@@ -185,9 +191,24 @@ class ArucoNode(rclpy.node.Node):
             # Publish the results with the poses and markes positions
             self.poses_pub.publish(pose_array)
             self.markers_pub.publish(markers)
+            self.marker_to_tf(marker=markers)
 
         # publish the image frame with computed markers positions over the image
         self.image_pub.publish(self.bridge.cv2_to_imgmsg(frame, "rgb8"))
+
+    def marker_to_tf(self, marker: ArucoMarkers):
+        for i in range(len(marker.marker_ids)):
+            t = TransformStamped()
+            t.header = marker.header
+            t.child_frame_id = "aruco_" + str(marker.marker_ids[i])
+            t.transform.translation.x = marker.poses[i].position.x
+            t.transform.translation.y = marker.poses[i].position.y
+            t.transform.translation.z = marker.poses[i].position.z
+            t.transform.rotation.x = marker.poses[i].orientation.x
+            t.transform.rotation.y = marker.poses[i].orientation.y
+            t.transform.rotation.z = marker.poses[i].orientation.z
+            t.transform.rotation.w = marker.poses[i].orientation.w
+            self.tf_broadcaster.sendTransform(t)
 
     def depth_image_callback(self, depth_msg: Image):
         if self.info_msg is None:
