@@ -55,10 +55,33 @@ from sensor_msgs.msg import CameraInfo
 from sensor_msgs.msg import Image
 from geometry_msgs.msg import PoseArray
 from tf2_ros import TransformBroadcaster
+from tf2_ros.static_transform_broadcaster import StaticTransformBroadcaster
 from geometry_msgs.msg import TransformStamped
 from aruco_interfaces.msg import ArucoMarkers
 from rcl_interfaces.msg import ParameterDescriptor, ParameterType
 
+def quaternion_from_euler(ai, aj, ak):
+    ai /= 2.0
+    aj /= 2.0
+    ak /= 2.0
+    ci = np.math.cos(ai)
+    si = np.math.sin(ai)
+    cj = np.math.cos(aj)
+    sj = np.math.sin(aj)
+    ck = np.math.cos(ak)
+    sk = np.math.sin(ak)
+    cc = ci*ck
+    cs = ci*sk
+    sc = si*ck
+    ss = si*sk
+
+    q = np.empty((4, ))
+    q[0] = cj*sc - sj*cs
+    q[1] = cj*ss + sj*cc
+    q[2] = cj*cs - sj*sc
+    q[3] = cj*cc + sj*ss
+
+    return q
 
 class ArucoNode(rclpy.node.Node):
     def __init__(self):
@@ -117,6 +140,8 @@ class ArucoNode(rclpy.node.Node):
 
         # Initialize the transform broadcaster
         self.tf_broadcaster = TransformBroadcaster(self)
+        self.tf_static_broadcaster = StaticTransformBroadcaster(self)
+        self.make_transforms()
 
 
         # Set up fields for camera parameters
@@ -134,6 +159,25 @@ class ArucoNode(rclpy.node.Node):
         # self.aruco_parameters = cv2.aruco.DetectorParameters_create()
 
         self.bridge = CvBridge()
+
+    def make_transforms(self):
+        t = TransformStamped()
+
+        t.header.stamp = self.get_clock().now().to_msg()
+        t.header.frame_id = 'aruco_1'
+        t.child_frame_id = "world_base"
+
+        t.transform.translation.x = 0.0777660608291626
+        t.transform.translation.y = 0.7986390590667725
+        t.transform.translation.z = 0.010082422755658627
+        #quat = quaternion_from_euler(-0.0316959, -0.028009, 0.0328317)
+        t.transform.rotation.x = 0.01561374869197607
+        t.transform.rotation.y = 0.014260506257414818
+        t.transform.rotation.z = -0.016189545392990112
+        t.transform.rotation.w = 0.9996452927589417
+        print(t.transform)
+
+        self.tf_static_broadcaster.sendTransform(t)
 
     def info_callback(self, info_msg):
         self.info_msg = info_msg
