@@ -154,7 +154,7 @@ def generate_launch_description():
             "align_depth.enable": "false",
             "enable_color": "true",
             "enable_depth": "false",
-            "rgb_camera.color_profile": "1280x720x15",
+            "rgb_camera.color_profile": "1920x1080x15",
         }.items(),
         condition=UnlessCondition(LaunchConfiguration('use_depth_input'))
     )
@@ -199,6 +199,6 @@ def generate_launch_description():
         aruco_node, 
         camera_feed_depth_node,
         camera_feed_node,
-        description_node,
-        rviz2_node
+        #description_node,
+        #rviz2_node
     ])
