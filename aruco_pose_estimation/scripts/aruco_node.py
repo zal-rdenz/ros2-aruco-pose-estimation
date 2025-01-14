@@ -157,7 +157,7 @@ class ArucoNode(rclpy.node.Node):
         # old code version
         # self.aruco_dictionary = cv2.aruco.Dictionary_get(dictionary_id)
         # self.aruco_parameters = cv2.aruco.DetectorParameters_create()
-
+        print(self.image_topic)
         self.bridge = CvBridge()
 
     def make_transforms(self):
@@ -165,7 +165,7 @@ class ArucoNode(rclpy.node.Node):
 
         t.header.stamp = self.get_clock().now().to_msg()
         t.header.frame_id = 'aruco_1'
-        t.child_frame_id = "world_base"
+        t.child_frame_id = "world"
 
         t.transform.translation.x = 0.0777660608291626
         t.transform.translation.y = 0.7986390590667725
